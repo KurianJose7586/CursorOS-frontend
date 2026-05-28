@@ -17,10 +17,12 @@ class OverlayWindow:
         self.root.attributes('-topmost', True)
         self.root.overrideredirect(True)
         
-        # Fixed Professional Dimensions (prevents jerky resizing)
+        # Fixed Professional Dimensions
         self.width = 650
         self.height = 480
         self.collapsed_height = 70
+        self.pill_width = 120
+        self.pill_height = 4
         
         self.root.geometry(f'{self.width}x{self.collapsed_height}')
         self._center_window(self.collapsed_height)
@@ -31,11 +33,14 @@ class OverlayWindow:
             'bg_secondary': '#161618',
             'border': '#232326',
             'accent': '#3B82F6',
+            'glow': '#3B82F6', # Electric Blue glow
             'text_main': '#F3F4F6',
             'text_dim': '#9CA3AF',
             'success': '#10B981',
             'error': '#EF4444'
         }
+        
+        self.primary_font = "Segoe UI"
         
         self.root.configure(bg=self.colors['bg'])
         
@@ -46,18 +51,22 @@ class OverlayWindow:
         self.container = tk.Frame(self.outer_border, bg=self.colors['bg'])
         self.container.pack(fill='both', expand=True)
         
+        # Pill View (visible when collapsed)
+        self.pill_view = tk.Frame(self.container, bg=self.colors['accent'], height=self.pill_height)
+        # We don't pack it yet, we'll manage visibility in show/hide
+        
         # --- Header / Input Area ---
-        self.header = tk.Frame(self.container, bg=self.colors['bg'], padx=16, pady=12)
+        self.header = tk.Frame(self.container, bg=self.colors['bg'], padx=16, pady=10)
         self.header.pack(fill='x')
         
         # Mode Pill
         self.mode_btn = tk.Label(
             self.header, 
             textvariable=self.mode,
-            font=("Inter", 8, "bold"),
+            font=(self.primary_font, 9, "bold"),
             fg=self.colors['accent'],
             bg=self.colors['bg_secondary'],
-            padx=10,
+            padx=12,
             pady=4,
             cursor="hand2"
         )
@@ -67,7 +76,7 @@ class OverlayWindow:
         # Main Entry
         self.entry = tk.Entry(
             self.header,
-            font=("Inter", 13),
+            font=(self.primary_font, 12),
             bg=self.colors['bg'],
             fg=self.colors['text_main'],
             insertbackground='white',
@@ -84,8 +93,8 @@ class OverlayWindow:
         # Send Icon
         self.send_icon = tk.Label(
             self.header,
-            text="󰁝", # Using a symbol char
-            font=("Inter", 14),
+            text="↑",
+            font=(self.primary_font, 16, "bold"),
             fg=self.colors['text_dim'],
             bg=self.colors['bg'],
             cursor="hand2"
@@ -93,31 +102,23 @@ class OverlayWindow:
         self.send_icon.pack(side='right')
         self.send_icon.bind("<Button-1>", lambda e: self.handle_submit())
         
-        # --- Content Region (Hidden by default) ---
-        self.content_scroll = tk.Frame(self.container, bg=self.colors['bg'], padx=16)
-        
-        # Horizontal Separator
+        # --- Content Region ---
+        self.content_scroll = tk.Frame(self.container, bg=self.colors['bg'], padx=20)
         self.divider = tk.Frame(self.content_scroll, bg=self.colors['border'], height=1)
-        
-        # Task Stack
-        self.task_frame = tk.Frame(self.content_scroll, bg=self.colors['bg'], pady=12)
+        self.task_frame = tk.Frame(self.content_scroll, bg=self.colors['bg'], pady=15)
         self.task_widgets = {}
-        
-        # Dynamic results / message area
         self.results_area = tk.Frame(self.content_scroll, bg=self.colors['bg'])
         self.result_items = []
         self.selected_index = -1
-        
-        # Action Bar (Execute Plan)
-        self.action_bar = tk.Frame(self.content_scroll, bg=self.colors['bg'], pady=10)
+        self.action_bar = tk.Frame(self.content_scroll, bg=self.colors['bg'], pady=15)
         self.execute_btn = tk.Label(
             self.action_bar,
             text="Run Action Chain",
-            font=("Inter", 9, "bold"),
+            font=(self.primary_font, 10, "bold"),
             bg=self.colors['accent'],
             fg='white',
-            padx=16,
-            pady=6,
+            padx=20,
+            pady=8,
             cursor="hand2"
         )
         self.execute_btn.pack(side='right')
@@ -126,10 +127,12 @@ class OverlayWindow:
         self.root.bind("<Escape>", lambda e: self.hide())
         self.root.withdraw()
 
-    def _center_window(self, h):
+    def _center_window(self, h, target_y=None):
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
-        self.root.geometry(f'{self.width}x{int(h)}+{int((sw-self.width)/2)}+{int((sh-h)/2)}')
+        if target_y is None:
+            target_y = int((sh-h)/2)
+        self.root.geometry(f'{self.width}x{int(h)}+{int((sw-self.width)/2)}+{int(target_y)}')
 
     def _on_focus_in(self, e):
         if self.entry.get() == "Search or command...":
@@ -146,24 +149,55 @@ class OverlayWindow:
         self.send_icon.config(bg=self.colors['bg'], fg=self.colors['text_dim'])
 
     def show(self, event=None):
+        # Animation parameters
+        target_y = 40 # Position below camera
+        steps = 15
+        delay = 8
+        
+        sw = self.root.winfo_screenwidth()
+        
+        # Initial state (from Pill)
+        curr_x = (sw - self.pill_width) // 2
+        curr_y = 0
+        
+        self.root.geometry(f'{self.pill_width}x{self.pill_height}+{curr_x}+{curr_y}')
+        self.pill_view.pack_forget()
+        self.header.pack(fill='x')
         self.root.deiconify()
         self.root.lift()
-        self.root._center_window(self.collapsed_height) # Reset to small
-        self.entry.config(state='normal')
-        self.entry.focus_set()
         
-        # Clear content
+        def animate(step):
+            if step <= steps:
+                t = step / steps
+                ease_out = 1 - (1 - t) * (1 - t)
+                
+                # Interpolate Width, Height, X, Y
+                w = int(self.pill_width + (self.width - self.pill_width) * ease_out)
+                h = int(self.pill_height + (self.collapsed_height - self.pill_height) * ease_out)
+                x = (sw - w) // 2
+                y = int(curr_y + (target_y - curr_y) * ease_out)
+                
+                self.root.geometry(f'{w}x{h}+{x}+{y}')
+                self.root.after(delay, lambda: animate(step + 1))
+            else:
+                self.entry.config(state='normal')
+                self.entry.focus_set()
+
+        # Reset
         self.content_scroll.pack_forget()
         self.action_bar.pack_forget()
         for w in self.task_frame.winfo_children(): w.destroy()
         for w in self.results_area.winfo_children(): w.destroy()
         self.task_widgets = {}
         self.result_items = []
+        
+        animate(0)
 
     def expand(self):
-        """Smoothly reveal content area."""
-        self.root.geometry(f'{self.width}x{self.height}')
-        self._center_window(self.height)
+        # When expanding for results/tasks, we maintain the center-top position
+        sw = self.root.winfo_screenwidth()
+        curr_y = self.root.winfo_y()
+        self.root.geometry(f'{self.width}x{self.height}+{int((sw-self.width)/2)}+{curr_y}')
         self.content_scroll.pack(fill='both', expand=True)
         self.divider.pack(fill='x')
         self.task_frame.pack(fill='x')
@@ -172,16 +206,12 @@ class OverlayWindow:
     def add_task_step(self, task_id, description):
         if not self.content_scroll.winfo_viewable():
             self.expand()
-        
         row = tk.Frame(self.task_frame, bg=self.colors['bg'], pady=4)
         row.pack(fill='x')
-        
         indicator = tk.Label(row, text="●", font=("Inter", 8), fg='#272729', bg=self.colors['bg'])
         indicator.pack(side='left', padx=(4, 12))
-        
         desc = tk.Label(row, text=description, font=("Inter", 10), fg=self.colors['text_dim'], bg=self.colors['bg'])
         desc.pack(side='left')
-        
         self.task_widgets[task_id] = {"dot": indicator, "text": desc}
         self.root.update_idletasks()
 
@@ -201,13 +231,8 @@ class OverlayWindow:
         self.expand()
         for w in self.results_area.winfo_children(): w.destroy()
         m = tk.Label(
-            self.results_area, 
-            text=msg, 
-            fg=self.colors['text_main'], 
-            bg=self.colors['bg'], 
-            font=("Inter", 11),
-            wraplength=self.width - 60,
-            justify='left'
+            self.results_area, text=msg, fg=self.colors['text_main'], bg=self.colors['bg'], 
+            font=("Inter", 11), wraplength=self.width - 60, justify='left'
         )
         m.pack(pady=20, anchor='w')
         self.root.update_idletasks()
@@ -216,27 +241,21 @@ class OverlayWindow:
         self.expand()
         for w in self.results_area.winfo_children(): w.destroy()
         self.result_items = []
-        
         if not results:
             tk.Label(self.results_area, text="No results found", fg=self.colors['text_dim'], bg=self.colors['bg'], pady=20).pack()
             return
-
         for i, path in enumerate(results[:3]):
             f = tk.Frame(self.results_area, bg=self.colors['bg'], pady=10, padx=12, cursor="hand2")
             f.pack(fill='x', pady=2)
-            
             icon = "󰈞" if os.path.splitext(path)[1] else "󰉋"
             tk.Label(f, text=icon, font=("Inter", 14), bg=self.colors['bg'], fg=self.colors['text_dim']).pack(side='left', padx=(0, 12))
-            
             txt = tk.Frame(f, bg=self.colors['bg'])
             txt.pack(side='left', fill='both')
             tk.Label(txt, text=os.path.basename(path), font=("Inter", 11, "bold"), bg=self.colors['bg'], fg=self.colors['text_main']).pack(anchor='w')
             tk.Label(txt, text=path, font=("Inter", 8), bg=self.colors['bg'], fg=self.colors['text_dim']).pack(anchor='w')
-
             item = {"frame": f, "path": path}
             self.result_items.append(item)
             f.bind("<Button-1>", lambda e, p=path: self.on_select(p))
-            # Nested bindings for smoother click
             for child in f.winfo_children():
                 child.bind("<Button-1>", lambda e, p=path: self.on_select(p))
                 if isinstance(child, tk.Frame):
@@ -279,11 +298,46 @@ class OverlayWindow:
             self.hide()
 
     def hide(self, event=None):
-        self.root.withdraw()
-        self.entry.config(state='normal')
-        self.entry.delete(0, tk.END)
-        self.root.unbind("<Return>")
-        self.root.bind("<Return>", lambda e: self.handle_submit())
+        # Animation parameters
+        curr_y = self.root.winfo_y()
+        curr_w = self.root.winfo_width()
+        curr_h = self.root.winfo_height()
+        
+        sw = self.root.winfo_screenwidth()
+        target_y = 0
+        steps = 12
+        delay = 8
+        
+        # Hide interactive elements immediately
+        self.header.pack_forget()
+        self.content_scroll.pack_forget()
+        
+        def animate_exit(step):
+            if step <= steps:
+                t = step / steps
+                ease_in = t * t
+                
+                # Interpolate back to Pill
+                w = int(curr_w + (self.pill_width - curr_w) * ease_in)
+                h = int(curr_h + (self.pill_height - curr_h) * ease_in)
+                x = (sw - w) // 2
+                y = int(curr_y + (target_y - curr_y) * ease_in)
+                
+                self.root.geometry(f'{w}x{h}+{x}+{y}')
+                self.root.after(delay, lambda: animate_exit(step + 1))
+            else:
+                self.pill_view.pack(fill='both', expand=True)
+                # Reset state after animation
+                self.entry.config(state='normal')
+                self.entry.delete(0, tk.END)
+                self.entry.insert(0, "Search or command...")
+                self.root.unbind("<Return>")
+                self.root.bind("<Return>", lambda e: self.handle_submit())
+                
+                # Make pill interactive (click to show)
+                self.pill_view.bind("<Button-1>", lambda e: self.show())
+
+        animate_exit(0)
 
     def run(self):
         self.root.mainloop()
