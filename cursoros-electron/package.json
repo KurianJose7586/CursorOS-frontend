@@ -1,0 +1,62 @@
+{
+  "name": "cursoros",
+  "version": "2.0.0",
+  "description": "CursorOS — AI Desktop Overlay (Apple Design)",
+  "main": "./src/main/index.js",
+  "scripts": {
+    "dev": "vite",
+    "start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build",
+    "dist": "npm run build && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "tailwindcss": "^4.3.1",
+    "vite": "^6.0.7",
+    "wait-on": "^8.0.2"
+  },
+  "dependencies": {
+    "framer-motion": "^12.0.0",
+    "lucide-react": "^0.469.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "build": {
+    "appId": "com.cursoros.app",
+    "productName": "CursorOS",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "CursorOS"
+    },
+    "files": [
+      "src/main/**/*",
+      "src/preload/**/*",
+      "build/renderer/**/*",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "src/main/server_wrapper.py",
+        "to": "server_wrapper.py"
+      }
+    ]
+  }
+}

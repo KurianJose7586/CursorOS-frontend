@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+frontend/__pycache__/
+frontend/**/__pycache__/
+
+# Build output
+cursoros-electron/build/
+cursoros-electron/dist/
+
+# Environment
+backend/.env
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*

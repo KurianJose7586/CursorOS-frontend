@@ -1,0 +1,115 @@
+/* ═══════════════════════════════════════════════════
+   APPLE DESIGN TOKEN SYSTEM — CursorOS
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  /* ── Grid ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ── Typography ── */
+  --font-sf: -apple-system, BlinkMacSystemFont,
+    'SF Pro Display', 'SF Pro Text',
+    'Segoe UI Variable', 'Segoe UI',
+    system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ── Colors — Dark Mode ── */
+  --bg-glass: rgba(30, 30, 30, 0.72);
+  --bg-elevated: rgba(50, 50, 50, 0.60);
+  --bg-input: rgba(0, 0, 0, 0.30);
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-button: rgba(255, 255, 255, 0.10);
+  --bg-button-hover: rgba(255, 255, 255, 0.15);
+
+  --text-1: rgba(255, 255, 255, 0.97);
+  --text-2: rgba(255, 255, 255, 0.60);
+  --text-3: rgba(255, 255, 255, 0.30);
+  --text-4: rgba(255, 255, 255, 0.15);
+
+  --separator: rgba(255, 255, 255, 0.10);
+  --separator-hairline: rgba(255, 255, 255, 0.06);
+
+  --blue: #0A84FF;
+  --blue-hover: #409CFF;
+  --blue-pressed: #0066CC;
+  --blue-glow: rgba(10, 132, 255, 0.20);
+  --blue-fill: rgba(10, 132, 255, 0.12);
+
+  --green: #30D158;
+  --green-fill: rgba(48, 209, 88, 0.12);
+  --red: #FF453A;
+  --red-fill: rgba(255, 69, 58, 0.12);
+  --yellow: #FFD60A;
+
+  /* ── Radius ── */
+  --r-panel: 20px;
+  --r-card: 12px;
+  --r-input: 10px;
+  --r-button: 8px;
+  --r-pill: 6px;
+
+  /* ── Shadows ── */
+  --shadow-panel:
+    0 22px 70px 4px rgba(0, 0, 0, 0.56),
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    inset 0 0.5px 0 0 rgba(255, 255, 255, 0.10);
+  --shadow-input:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+
+  /* ── Animation ── */
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1.0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1.0);
+}
+
+/* ── Global Resets ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--font-sf);
+  color: var(--text-1);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Glass Panel ── */
+.apple-glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(60px) saturate(1.8) brightness(1.1);
+  -webkit-backdrop-filter: blur(60px) saturate(1.8) brightness(1.1);
+  border: 1px solid var(--separator-hairline);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+/* ── Apple Scrollbar ── */
+.apple-scroll::-webkit-scrollbar { width: 6px; background: transparent; }
+.apple-scroll::-webkit-scrollbar-track { background: transparent; }
+.apple-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+.apple-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.20); }
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
