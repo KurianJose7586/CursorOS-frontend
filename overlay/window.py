@@ -261,6 +261,66 @@ class OverlayWindow:
                 if isinstance(child, tk.Frame):
                     for g in child.winfo_children(): g.bind("<Button-1>", lambda e, p=path: self.on_select(p))
 
+    def display_org_preview(self, proposal, on_confirm):
+        self.expand()
+        for w in self.results_area.winfo_children(): w.destroy()
+        
+        tk.Label(self.results_area, text="Confirm Organization Plan", font=(self.primary_font, 11, "bold"), 
+                 fg=self.colors['accent'], bg=self.colors['bg']).pack(pady=(0, 15), anchor='w')
+        
+        # Scrollable container for many files
+        canvas = tk.Canvas(self.results_area, bg=self.colors['bg'], highlightthickness=0, height=250)
+        scrollbar = ttk.Scrollbar(self.results_area, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg'])
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=self.width-60)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        self.org_vars = []
+        for item in proposal:
+            row = tk.Frame(scrollable_frame, bg=self.colors['bg_secondary'], pady=8, padx=12)
+            row.pack(fill='x', pady=2)
+            
+            # File name (truncated if long)
+            fname = item['file']
+            if len(fname) > 30: fname = fname[:27] + "..."
+            tk.Label(row, text=fname, fg=self.colors['text_main'], bg=self.colors['bg_secondary'], 
+                     font=(self.primary_font, 9)).pack(side='left')
+            
+            tk.Label(row, text=" → ", fg=self.colors['text_dim'], bg=self.colors['bg_secondary']).pack(side='left')
+            
+            # Target folder entry
+            target_var = tk.StringVar(value=item['target'])
+            entry = tk.Entry(row, textvariable=target_var, bg=self.colors['bg'], fg=self.colors['text_main'],
+                             insertbackground='white', bd=0, highlightthickness=1, 
+                             highlightbackground=self.colors['border'], width=20)
+            entry.pack(side='right', padx=5)
+            
+            self.org_vars.append({"file": item['file'], "var": target_var})
+
+        # Confirm Button at the bottom
+        btn_frame = tk.Frame(self.results_area, bg=self.colors['bg'], pady=10)
+        btn_frame.pack(fill='x')
+        
+        def handle_confirm():
+            final_proposal = [{"file": o["file"], "target": o["var"].get()} for o in self.org_vars]
+            on_confirm(final_proposal)
+
+        confirm_btn = tk.Label(
+            btn_frame, text="Execute Organization", font=(self.primary_font, 10, "bold"),
+            bg=self.colors['success'], fg='white', padx=20, pady=8, cursor="hand2"
+        )
+        confirm_btn.pack(side='right')
+        confirm_btn.bind("<Button-1>", lambda e: handle_confirm())
+
     def _focus_results(self, e):
         if self.result_items:
             self._move_selection(1)
